@@ -97,7 +97,7 @@ const PROVIDER = (Deno.env.get('AI_PROVIDER') || 'gemini').toLowerCase();
 const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY');
 const GEMINI_KEY = Deno.env.get('GEMINI_API_KEY');
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.5-flash';
 
 const DISCLAIMERS: Record<string, string> = {
   en: 'This AI explanation is for informational purposes only and is not a diagnosis. Always consult a licensed healthcare professional for medical advice.',
