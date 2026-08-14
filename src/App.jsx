@@ -21,7 +21,14 @@ function HomeRedirect() {
   if (!user) return <Welcome />;
   // A new session can exist a moment before the profile query completes.
   // Keep it in place rather than bouncing the user back to the login form.
-  if (!profile) return null;
+  // if (!profile) return null;
+  if (!profile) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p>Loading profile...</p>
+    </div>
+  );
+  }
   const role = profile.role;
   return <Navigate to={routes[role] || '/login'} replace />;
 }
