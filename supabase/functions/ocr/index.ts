@@ -1,7 +1,8 @@
 // Edge Function: ocr
 // Server-side OCR pipeline triggered after a report upload.
 // Uses Tesseract.js in the Edge Function runtime to extract text.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, jsonResponse, handleOptions } from '../_shared/cors.ts';
 import { createWorker } from 'https://esm.sh/tesseract.js@5';
 
