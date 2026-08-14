@@ -11,14 +11,7 @@ import Layout from './components/Layout';
 
 function HomeRedirect() {
   const { user, profile, loading } = useAuth();
-  // if (loading) return null;
-  if (loading) {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p>Loading authentication...</p>
-    </div>
-  );
-   }
+  if (loading) return null;
   const routes = {
     patient: '/patient',
     doctor: '/doctor',
@@ -28,14 +21,7 @@ function HomeRedirect() {
   if (!user) return <Welcome />;
   // A new session can exist a moment before the profile query completes.
   // Keep it in place rather than bouncing the user back to the login form.
-  // if (!profile) return null;
-  if (!profile) {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p>Loading profile...</p>
-    </div>
-  );
-  }
+  if (!profile) return null;
   const role = profile.role;
   return <Navigate to={routes[role] || '/login'} replace />;
 }
