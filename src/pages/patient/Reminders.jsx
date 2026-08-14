@@ -10,6 +10,7 @@ export default function Reminders() {
   const [reminders, setReminders] = useState([]);
   const [form, setForm] = useState({ title: '', frequency: 'daily', time: '08:00' });
   const [error, setError] = useState('');
+  const [loggedDoses, setLoggedDoses] = useState({});
 
   useEffect(() => {
     if (!patientId) return;
@@ -39,6 +40,29 @@ export default function Reminders() {
       loadReminders();
     }
   }
+  
+   const handleLogDose = async (reminder) => {
+  if (!profile?.id || !reminder?.id) return;
+
+  const { error } = await supabase
+    .from('dose_logs')
+    .insert({
+      reminder_id: reminder.id,
+      patient_id: profile.id,
+      status: 'taken',
+    });
+
+  if (error) {
+    console.error('Log dose error:', error);
+    alert(error.message);
+    return;
+  }
+
+  setLoggedDoses((prev) => ({
+    ...prev,
+    [reminder.id]: true,
+  }));
+};
 
   async function logDose(reminder) {
     setError('');
@@ -100,9 +124,16 @@ export default function Reminders() {
                   <p className="font-medium">{r.medicine_name}</p>
                   <p className="text-sm text-slate-500 capitalize">{r.frequency} · {r.time}</p>
                 </div>
-                <button onClick={() => logDose(r)} className="btn-secondary text-sm">
-                  Log dose
-                </button>
+                <button
+  type="button"
+  onClick={() => handleLogDose(reminder)}
+  disabled={loggedDoses[reminder.id]}
+  className="rounded-xl border-2 px-5 py-3 font-medium disabled:opacity-60"
+>
+  {loggedDoses[reminder.id]
+    ? 'Dose logged ✓'
+    : 'Log dose'}
+</button>
                 <button onClick={() => deleteReminder(r.id)} className="btn-danger text-sm">
                   Delete
                 </button>
