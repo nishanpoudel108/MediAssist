@@ -48,7 +48,7 @@
 // Flow:
 // Frontend → Supabase Storage → this function → Gemini → extracted text → DB
 
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   corsHeaders,
   jsonResponse,
@@ -59,7 +59,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-const GEMINI_MODEL = 'gemini-3.5-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 if (!supabaseUrl) {
   console.error('Missing SUPABASE_URL');
