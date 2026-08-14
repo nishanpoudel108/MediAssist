@@ -86,6 +86,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
+import NepaliDate from 'nepali-date-converter';
 
 const BLOOD_GROUPS = [
   'A+',
@@ -527,29 +528,15 @@ function StatCard({ label, value, to }) {
    Replace this with a proper Nepali
    calendar conversion library/function.
 --------------------------------------- */
-
 function convertADToBS(adDate) {
   if (!adDate) return '';
 
-  // Temporary fallback.
-  // Do NOT use this as an actual calendar
-  // conversion in production.
+  try {
+    const nepaliDate = new NepaliDate(new Date(`${adDate}T00:00:00`));
 
-  const date = new Date(`${adDate}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
+    return nepaliDate.format('YYYY-MM-DD');
+  } catch (error) {
+    console.error('AD to BS conversion error:', error);
     return '';
   }
-
-  /*
-   * Placeholder only.
-   *
-   * A proper AD -> BS conversion should be
-   * handled using a Nepali calendar library.
-   *
-   * Example output:
-   * 2005-05-15 -> 2062-02-01
-   */
-
-  return 'BS conversion required';
 }
