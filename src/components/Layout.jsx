@@ -17,6 +17,7 @@ import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminUsers from '../pages/admin/AdminUsers';
 import AdminHospitals from '../pages/admin/AdminHospitals';
 import AdminAnalytics from '../pages/admin/AdminAnalytics';
+import PatientProfilePopup from '../pages/patient/PatientProfilePopup';
 
 const navByRole = {
   patient: [
@@ -83,6 +84,7 @@ export default function Layout({ role }) {
   const nav = navByRole[role] || [];
   const routes = roleRoutes[role] || null;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   async function handleSignOut() {
     await signOut();
@@ -131,13 +133,71 @@ export default function Layout({ role }) {
             </NavLink>
           ))}
         </nav>
-        <div className="px-6 py-5 border-t border-white/10 space-y-3">
+        {/* <div className="px-6 py-5 border-t border-white/10 space-y-3">
           <LanguageSwitcher compact />
           <p className="text-sm text-slate-300 truncate">{profile?.full_name || profile?.email}</p>
           <button onClick={handleSignOut} className="btn-secondary w-full text-slate-900">
             {t('logout')}
           </button>
-        </div>
+        </div> */}
+        <div className="px-4 py-5 border-t border-white/10 space-y-3">
+
+  <LanguageSwitcher compact />
+
+  {/* Patient Profile Button */}
+  <button
+    type="button"
+    onClick={() => setProfileOpen(true)}
+    className="group w-full rounded-xl px-2 py-2 text-left transition hover:bg-white/10"
+  >
+    <div className="flex items-center gap-3">
+
+      {/* Avatar */}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-sm font-semibold text-white">
+        {(
+          profile?.full_name ||
+          profile?.email ||
+          'P'
+        )
+          .split(' ')
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((word) => word[0])
+          .join('')
+          .toUpperCase()}
+      </div>
+
+      {/* Name */}
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-white">
+          {profile?.full_name || 'Patient'}
+        </p>
+
+        <p className="text-xs text-white/60 group-hover:text-white/80">
+          View profile
+        </p>
+      </div>
+
+    </div>
+  </button>
+
+  {/* Sign Out */}
+  <button
+    type="button"
+    onClick={handleSignOut}
+    className="btn-secondary w-full text-slate-900"
+  >
+    {t('logout')}
+  </button>
+
+  {/* Profile Popup */}
+  <PatientProfilePopup
+    profile={profile}
+    open={profileOpen}
+    onClose={() => setProfileOpen(false)}
+  />
+
+</div>
       </aside>
 
       {/* Main */}

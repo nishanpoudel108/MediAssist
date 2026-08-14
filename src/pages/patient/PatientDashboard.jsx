@@ -215,43 +215,76 @@ export default function PatientDashboard() {
     setDetailsError('');
   };
 
+  // const handleSaveDetails = async () => {
+  //   if (!profile?.id) return;
+
+  //   setSavingDetails(true);
+  //   setDetailsMessage('');
+  //   setDetailsError('');
+
+  //   try {
+  //     const { error } = await supabase
+  //       .from('patients')
+  //       .upsert(
+  //         {
+  //           id: profile.id,
+  //           date_of_birth: dobAD || null,
+  //           blood_group: bloodGroup || null,
+  //         },
+  //         {
+  //           onConflict: 'id',
+  //         }
+  //       );
+
+  //     if (error) {
+  //       throw error;
+  //     }
+
+  //     setDetailsMessage('Personal details saved successfully.');
+  //   } catch (error) {
+  //     console.error('Save patient details error:', error);
+
+  //     setDetailsError(
+  //       error?.message || 'Failed to save personal details.'
+  //     );
+  //   } finally {
+  //     setSavingDetails(false);
+  //   }
+  // };
+
   const handleSaveDetails = async () => {
-    if (!profile?.id) return;
+  if (!profile?.id) return;
 
-    setSavingDetails(true);
-    setDetailsMessage('');
-    setDetailsError('');
+  setSavingDetails(true);
+  setDetailsMessage('');
+  setDetailsError('');
 
-    try {
-      const { error } = await supabase
-        .from('patients')
-        .upsert(
-          {
-            id: profile.id,
-            date_of_birth: dobAD || null,
-            blood_group: bloodGroup || null,
-          },
-          {
-            onConflict: 'id',
-          }
-        );
-
-      if (error) {
-        throw error;
-      }
-
-      setDetailsMessage('Personal details saved successfully.');
-    } catch (error) {
-      console.error('Save patient details error:', error);
-
-      setDetailsError(
-        error?.message || 'Failed to save personal details.'
+  try {
+    const { error } = await supabase
+      .from('patients')
+      .upsert(
+        {
+          id: profile.id,
+          full_name: profile.full_name || null,
+          email: profile.email || null,
+          date_of_birth: dobAD || null,
+          blood_group: bloodGroup || null,
+        },
+        {
+          onConflict: 'id',
+        }
       );
-    } finally {
-      setSavingDetails(false);
-    }
-  };
 
+    if (error) throw error;
+
+    setDetailsMessage('Personal details saved successfully.');
+  } catch (error) {
+    console.error('Save patient details error:', error);
+    setDetailsError(error.message || 'Failed to save personal details.');
+  } finally {
+    setSavingDetails(false);
+  }
+};
   return (
     <div className="space-y-6">
 
