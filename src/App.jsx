@@ -11,7 +11,14 @@ import Layout from './components/Layout';
 
 function HomeRedirect() {
   const { user, profile, loading } = useAuth();
-  if (loading) return null;
+  // if (loading) return null;
+  if (loading) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p>Loading authentication...</p>
+    </div>
+  );
+   }
   const routes = {
     patient: '/patient',
     doctor: '/doctor',
