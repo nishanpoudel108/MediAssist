@@ -1,0 +1,92 @@
+// Shared AI provider + guardrail construction for Edge Functions.
+// The prompt enforces: never diagnose, always disclaim, use risk language.
+// The API key is read from environment variables (never hardcoded).
+
+const PROVIDER = Deno.env.get('AI_PROVIDER') || 'openai';
+const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY');
+const GEMINI_KEY = Deno.env.get('GEMINI_API_KEY');
+
+const DISCLAIMERS: Record<string, string> = {
+  en: 'This AI explanation is for informational purposes only and is not a diagnosis. Always consult a licensed healthcare professional for medical advice.',
+  ne: 'यो AI व्याख्या जानकारीका लागि मात्र हो र यो निदान होइन। चिकित्सकीय सल्लाहका लागि सधैं इजाजतपत्र प्राप्त स्वास्थ्यकर्मीसँग परामर्श गर्नुहोस्।',
+  hi: 'यह एआई व्याख्या केवल जानकारी के लिए है और यह निदान नहीं है। चिकित्सा सलाह के लिए हमेशा लाइसेंस प्राप्त स्वास्थ्य पेशेवर से परामर्श करें।',
+};
+
+// Build the system prompt with mandatory guardrails.
+export function buildGuardrailedPrompt(userText: string, locale = 'en') {
+  return [
+    {
+      role: 'system',
+      content:
+        'You are a decision-support assistant for patients. You NEVER give a diagnosis. ' +
+        'You always use risk/likelihood language such as "this could indicate", "may suggest", ' +
+        '"increased risk of". You never state a condition as certain. ' +
+        'If findings appear acutely dangerous, mark the response as an emergency. ' +
+        'Always end with a recommendation to consult a licensed professional. ' +
+        `Respond using appropriate language; locale: ${locale}. ` +
+        'Return JSON with fields: { explanation, flagged_values: string[], next_steps: string[], is_emergency: boolean }.',
+    },
+    {
+      role: 'user',
+      content: userText,
+    },
+  ];
+}
+
+// Call the configured AI provider.
+export async function callAI(messages: unknown[]) {
+  if (PROVIDER === 'gemini') {
+    if (!GEMINI_KEY) throw new Error('GEMINI_API_KEY not set');
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: messages.map((m: any) => ({ role: m.role, parts: [{ text: m.content }] })),
+        }),
+      }
+    );
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return parseJsonFromText(text);
+  }
+
+  // default: openai
+  if (!OPENAI_KEY) throw new Error('OPENAI_API_KEY not set');
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages,
+      response_format: { type: 'json_object' },
+    }),
+  });
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content || '{}';
+  return JSON.parse(content);
+}
+
+function parseJsonFromText(text: string) {
+  try {
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return { explanation: text, flagged_values: [], next_steps: [], is_emergency: false };
+  }
+}
+
+// Post-process to guarantee disclaimer is present.
+export function attachDisclaimer(result: any, locale = 'en') {
+  const disclaimer = DISCLAIMERS[locale] || DISCLAIMERS.en;
+  const explanation = result.explanation || '';
+  if (!explanation.includes(disclaimer)) {
+    result.explanation = (explanation.trim() + '\n\n' + disclaimer).trim();
+  }
+  result.disclaimer = disclaimer;
+  return result;
+}

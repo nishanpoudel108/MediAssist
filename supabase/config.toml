@@ -1,0 +1,28 @@
+# Supabase CLI configuration for MediAssist AI.
+# Used for deploying Edge Functions and migrations.
+
+project_id = "mediassist-ai"
+
+[functions.analyze-report]
+verify_jwt = true
+
+[functions.check-interactions]
+verify_jwt = true
+
+[functions.audit-log]
+verify_jwt = true
+
+[functions.remind]
+verify_jwt = true
+
+[functions.grant-access]
+verify_jwt = true
+
+[functions.revoke-access]
+verify_jwt = true
+
+[functions.ocr]
+verify_jwt = true
+
+[functions.upload-report]
+verify_jwt = true

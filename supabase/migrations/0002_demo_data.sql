@@ -1,0 +1,154 @@
+-- -- ============================================================
+-- -- MediAssist AI — Demo / Seed Data for all four roles
+-- -- Run AFTER 0001_mediassist_schema.sql.
+-- --
+-- -- Creates auth users for each role and links role-profile rows.
+-- -- The on_auth_user_created trigger populates public.users.
+-- -- ============================================================
+
+-- -- ------------------------------------------------------------
+-- -- 1) AUTH USERS (one per role)
+-- --    Passwords are demo-only. Use Supabase Auth to log in.
+-- --    Default password for all: DemoPass123!
+-- -- ------------------------------------------------------------
+-- insert into auth.users (
+--   id, instance_id, email, encrypted_password, email_confirmed_at,
+--   raw_app_meta_data, raw_user_meta_data, aud, role, confirmation_token,
+--   email_change, email_change_token_new, recovery_token, created_at, updated_at
+-- ) values
+--   -- Patient
+--   ('11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000',
+--    'patient@demo.com',
+--    crypt('DemoPass123!', gen_salt('bf')),
+--    now(), '{"provider":"email","providers":["email"]}',
+--    '{"full_name":"Anita Sharma","role":"patient"}',
+--    'authenticated', 'authenticated', '', '', '', '', now(), now()),
+--   -- Doctor
+--   ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000',
+--    'doctor@demo.com',
+--    crypt('DemoPass123!', gen_salt('bf')),
+--    now(), '{"provider":"email","providers":["email"]}',
+--    '{"full_name":"Dr. Rajesh Koirala","role":"doctor"}',
+--    'authenticated', 'authenticated', '', '', '', '', now(), now()),
+--   -- Family member
+--   ('33333333-3333-3333-3333-333333333333', '00000000-0000-0000-0000-000000000000',
+--    'family@demo.com',
+--    crypt('DemoPass123!', gen_salt('bf')),
+--    now(), '{"provider":"email","providers":["email"]}',
+--    '{"full_name":"Mohan Sharma","role":"family"}',
+--    'authenticated', 'authenticated', '', '', '', '', now(), now()),
+--   -- Administrator
+--   ('44444444-4444-4444-4444-444444444444', '00000000-0000-0000-0000-000000000000',
+--    'admin@demo.com',
+--    crypt('DemoPass123!', gen_salt('bf')),
+--    now(), '{"provider":"email","providers":["email"]}',
+--    '{"full_name":"System Admin","role":"admin"}',
+--    'authenticated', 'authenticated', '', '', '', '', now(), now());
+
+-- -- ------------------------------------------------------------
+-- -- 2) ROLE PROFILE ROWS
+-- -- ------------------------------------------------------------
+-- insert into public.patients (id, full_name, email, date_of_birth, blood_group) values
+--   ('11111111-1111-1111-1111-111111111111', 'Anita Sharma', 'patient@demo.com', '1985-04-12', 'O+');
+
+-- insert into public.doctors (id, full_name, email, specialty, license_number) values
+--   ('22222222-2222-2222-2222-222222222222', 'Dr. Rajesh Koirala', 'doctor@demo.com', 'General Medicine', 'NMC-12345');
+
+-- insert into public.family_members (id, full_name, email, relationship) values
+--   ('33333333-3333-3333-3333-333333333333', 'Mohan Sharma', 'family@demo.com', 'Husband');
+
+-- -- Admin has no separate profile table (uses public.users with role='admin').
+
+-- -- ------------------------------------------------------------
+-- -- 3) MEDICAL REPORTS + AI ANALYSES for the patient
+-- -- ------------------------------------------------------------
+-- insert into public.medical_reports (id, patient_id, title, file_path, file_url, extracted_text, status) values
+--   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+--    '11111111-1111-1111-1111-111111111111',
+--    'Blood Test Report — March 2024',
+--    '11111111-1111-1111-1111-111111111111/blood_test_mar2024.pdf',
+--    'https://example.com/reports/blood_test_mar2024.pdf',
+--    'Hemoglobin 12.1 g/dL. Glucose fasting 98 mg/dL. Total cholesterol 210 mg/dL. RBC 4.5 million/uL.',
+--    'analyzed'),
+--   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+--    '11111111-1111-1111-1111-111111111111',
+--    'Lipid Profile — June 2024',
+--    '11111111-1111-1111-1111-111111111111/lipid_jun2024.pdf',
+--    'https://example.com/reports/lipid_jun2024.pdf',
+--    'LDL 140 mg/dL. HDL 42 mg/dL. Triglycerides 180 mg/dL. Total cholesterol 225 mg/dL.',
+--    'analyzed');
+
+-- insert into public.ai_analysis (report_id, summary, flagged_values, next_steps, disclaimer, is_emergency) values
+--   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+--    'Your blood test results are mostly within typical ranges. Your total cholesterol reading is slightly elevated, which could indicate an increased risk and may suggest paying attention to diet and exercise. Follow up with your doctor for a full review.',
+--    '["Total cholesterol 210 mg/dL (slightly elevated)"]',
+--    '["Discuss cholesterol with your doctor", "Consider a repeat fasting test"]',
+--    'This AI explanation is for informational purposes only and is not a diagnosis. Always consult a licensed healthcare professional for medical advice.',
+--    false),
+--   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+--    'Your lipid profile shows LDL and total cholesterol above typical targets. This could indicate increased cardiovascular risk and may suggest lifestyle changes and medical review. No emergency findings detected.',
+--    '["LDL 140 mg/dL (elevated)", "Total cholesterol 225 mg/dL (elevated)"]',
+--    '["Schedule a follow-up with your doctor", "Adopt heart-healthy diet and exercise"]',
+--    'This AI explanation is for informational purposes only and is not a diagnosis. Always consult a licensed healthcare professional for medical advice.',
+--    false);
+
+-- -- ------------------------------------------------------------
+-- -- 4) MEDICINES + REMINDERS + DOSE LOGS
+-- -- ------------------------------------------------------------
+-- insert into public.medicines (id, patient_id, name, dosage, schedule) values
+--   ('cccccccc-cccc-cccc-cccc-cccccccccccc', '11111111-1111-1111-1111-111111111111', 'Atorvastatin', '10mg', 'Once daily after dinner'),
+--   ('dddddddd-dddd-dddd-dddd-dddddddddddd', '11111111-1111-1111-1111-111111111111', 'Metformin', '500mg', 'Twice daily with meals');
+
+-- insert into public.reminders (id, patient_id, medicine_name, frequency, time) values
+--   ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '11111111-1111-1111-1111-111111111111', 'Atorvastatin', 'daily', '20:00'),
+--   ('ffffffff-ffff-ffff-ffff-ffffffffffff', '11111111-1111-1111-1111-111111111111', 'Metformin', 'daily', '08:00');
+
+-- insert into public.dose_logs (reminder_id, patient_id, status, logged_at) values
+--   ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '11111111-1111-1111-1111-111111111111', 'taken', now() - interval '1 day'),
+--   ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '11111111-1111-1111-1111-111111111111', 'taken', now()),
+--   ('ffffffff-ffff-ffff-ffff-ffffffffffff', '11111111-1111-1111-1111-111111111111', 'taken', now());
+
+-- -- ------------------------------------------------------------
+-- -- 5) PERMISSIONS — patient shares with doctor & family (opt-in)
+-- -- ------------------------------------------------------------
+-- insert into public.permissions (patient_id, grantee_email, grantee_type, scope) values
+--   ('11111111-1111-1111-1111-111111111111', 'doctor@demo.com', 'doctor', 'full'),
+--   ('11111111-1111-1111-1111-111111111111', 'family@demo.com', 'family', 'full');
+
+-- -- ------------------------------------------------------------
+-- -- 6) AUDIT LOGS — sample access trail
+-- -- ------------------------------------------------------------
+-- insert into public.audit_logs (actor_id, patient_id, action, resource) values
+--   ('11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'view', 'report:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+--   ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'view', 'report:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+--   ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'download', 'report:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'),
+--   ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'view', 'family:shared');
+
+-- -- ------------------------------------------------------------
+-- -- 7) HOSPITALS (if not already seeded)
+-- -- ------------------------------------------------------------
+-- insert into public.hospitals (name, type, address, phone, latitude, longitude)
+-- select * from (values
+--   ('Kathmandu General Hospital', 'hospital', 'Kathmandu, Nepal', '+977-1-4234567', 27.7172, 85.3240),
+--   ('Bir Hospital', 'emergency', 'Kathmandu, Nepal', '+977-1-4221119', 27.7161, 85.3170),
+--   ('Nepal Medicare Clinic', 'clinic', 'Lalitpur, Nepal', '+977-1-5537222', 27.6586, 85.3245),
+--   ('CityCare Pharmacy', 'pharmacy', 'Pokhara, Nepal', '+977-61-450911', 28.2096, 83.9856)
+-- ) as s(name, type, address, phone, latitude, longitude)
+-- where not exists (select 1 from public.hospitals);
+
+-- -- ------------------------------------------------------------
+-- -- Optional: copy the inserted users into public.users directly,
+-- -- in case the trigger already fired with metadata (idempotent-safe).
+-- -- ------------------------------------------------------------
+-- insert into public.users (id, email, full_name, role)
+-- select id, email,
+--        coalesce(raw_user_meta_data->>'full_name', email),
+--        coalesce(raw_user_meta_data->>'role', 'patient')
+-- from auth.users
+-- where id in (
+--   '11111111-1111-1111-1111-111111111111',
+--   '22222222-2222-2222-2222-222222222222',
+--   '33333333-3333-3333-3333-333333333333',
+--   '44444444-4444-4444-4444-444444444444'
+-- )
+-- on conflict (id) do nothing;
