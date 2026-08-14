@@ -155,34 +155,93 @@ export default function Reminders() {
   }, [patientId]);
 
   async function loadReminders() {
-    if (!patientId) return;
+  if (!patientId) return;
 
-    setLoading(true);
-    setError('');
+  setLoading(true);
+  setError('');
 
-    const { data, error: fetchError } = await supabase
-      .from('reminders')
-      .select('*')
-      .eq('patient_id', patientId)
-      .order('created_at', {
-        ascending: false,
-      });
+  try {
+    // Load reminders
+    const { data: reminderData, error: reminderError } =
+      await supabase
+        .from('reminders')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('created_at', {
+          ascending: false,
+        });
 
-    if (fetchError) {
-      console.error(
-        'Load reminders error:',
-        fetchError
-      );
-
-      setError(fetchError.message);
-      setReminders([]);
-    } else {
-      setReminders(data || []);
+    if (reminderError) {
+      throw reminderError;
     }
 
+    setReminders(reminderData || []);
+
+    // -----------------------------------------
+    // Load today's logged doses
+    // -----------------------------------------
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const { data: doseData, error: doseError } =
+      await supabase
+        .from('dose_logs')
+        .select('reminder_id, status, logged_at')
+        .eq('patient_id', patientId)
+        .eq('status', 'taken')
+        .gte(
+          'logged_at',
+          startOfDay.toISOString()
+        )
+        .lte(
+          'logged_at',
+          endOfDay.toISOString()
+        );
+
+    if (doseError) {
+      console.error(
+        'Load dose logs error:',
+        doseError
+      );
+
+      // Don't break the reminders page if
+      // dose history cannot be loaded.
+      return;
+    }
+
+    // Convert dose logs into:
+    //
+    // {
+    //   reminderUUID1: true,
+    //   reminderUUID2: true
+    // }
+
+    const logged = {};
+
+    (doseData || []).forEach((dose) => {
+      logged[dose.reminder_id] = true;
+    });
+
+    setLoggedDoses(logged);
+
+  } catch (err) {
+    console.error(
+      'Load reminders error:',
+      err
+    );
+
+    setError(
+      err?.message ||
+        'Failed to load reminders.'
+    );
+  } finally {
     setLoading(false);
   }
-
+}
   // -----------------------------------------
   // ADD REMINDER
   // -----------------------------------------
@@ -245,36 +304,31 @@ export default function Reminders() {
   // -----------------------------------------
 
   async function handleLogDose(reminder) {
-    if (!patientId) {
-      setError('Unable to identify the patient.');
-      return;
-    }
+  if (!patientId) {
+    setError('Unable to identify the patient.');
+    return;
+  }
 
-    if (!reminder?.id) {
-      setError('Unable to identify the reminder.');
-      return;
-    }
+  if (!reminder?.id) {
+    setError('Unable to identify the reminder.');
+    return;
+  }
 
-    // Prevent double-clicking
-    if (loggingDose[reminder.id]) {
-      return;
-    }
+  if (loggedDoses[reminder.id]) {
+    return;
+  }
 
-    // Already logged during this page session
-    if (loggedDoses[reminder.id]) {
-      return;
-    }
+  setError('');
+  setSuccess('');
 
-    setError('');
-    setSuccess('');
+  setLoggingDose((prev) => ({
+    ...prev,
+    [reminder.id]: true,
+  }));
 
-    setLoggingDose((prev) => ({
-      ...prev,
-      [reminder.id]: true,
-    }));
-
-    try {
-      const { error: doseError } = await supabase
+  try {
+    const { error: doseError } =
+      await supabase
         .from('dose_logs')
         .insert([
           {
@@ -285,46 +339,43 @@ export default function Reminders() {
           },
         ]);
 
-      if (doseError) {
-        console.error(
-          'Log dose error:',
-          doseError
-        );
-
-        setError(doseError.message);
-        return;
-      }
-
-      // Mark this reminder as logged
-      setLoggedDoses((prev) => ({
-        ...prev,
-        [reminder.id]: true,
-      }));
-
-      setSuccess(
-        `${reminder.medicine_name || 'Medicine'} dose logged successfully.`
-      );
-
-      setTimeout(() => {
-        setSuccess('');
-      }, 3000);
-    } catch (err) {
+    if (doseError) {
       console.error(
-        'Unexpected log dose error:',
-        err
+        'Log dose error:',
+        doseError
       );
 
-      setError(
-        err?.message ||
-          'Failed to log the dose.'
-      );
-    } finally {
-      setLoggingDose((prev) => ({
-        ...prev,
-        [reminder.id]: false,
-      }));
+      setError(doseError.message);
+      return;
     }
+
+    setLoggedDoses((prev) => ({
+      ...prev,
+      [reminder.id]: true,
+    }));
+
+    setSuccess(
+      `${reminder.medicine_name} dose logged successfully.`
+    );
+
+  } catch (err) {
+    console.error(
+      'Unexpected log dose error:',
+      err
+    );
+
+    setError(
+      err?.message ||
+        'Failed to log the dose.'
+    );
+
+  } finally {
+    setLoggingDose((prev) => ({
+      ...prev,
+      [reminder.id]: false,
+    }));
   }
+}
 
   // -----------------------------------------
   // DELETE REMINDER
@@ -517,22 +568,20 @@ export default function Reminders() {
 
                   {/* LOG DOSE */}
                   <button
-                    type="button"
-                    onClick={() =>
-                      handleLogDose(r)
-                    }
-                    disabled={
-                      loggedDoses[r.id] ||
-                      loggingDose[r.id]
-                    }
-                    className="rounded-xl border-2 border-[#668b70] px-5 py-3 font-medium text-slate-700 transition hover:bg-[#668b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {loggingDose[r.id]
-                      ? 'Logging...'
-                      : loggedDoses[r.id]
-                      ? 'Dose logged ✓'
-                      : 'Log dose'}
-                  </button>
+  type="button"
+  onClick={() => handleLogDose(r)}
+  disabled={
+    loggedDoses[r.id] ||
+    loggingDose[r.id]
+  }
+  className="rounded-xl border-2 border-[#668b70] px-5 py-3 font-medium text-slate-700 transition hover:bg-[#668b70]/10 disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {loggingDose[r.id]
+    ? 'Logging...'
+    : loggedDoses[r.id]
+    ? 'Dose logged ✓'
+    : 'Log dose'}
+</button>
 
                   {/* DELETE */}
                   <button
