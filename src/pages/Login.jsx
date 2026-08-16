@@ -36,6 +36,9 @@ export default function Login() {
         {error && (
           <div className="rounded-lg bg-red-50 text-red-700 text-sm p-3">{error}</div>
         )}
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link to="/Welcome" className="btn-primary px-5 py-3"><Dashboard></Dashboard></Link>
+            </div>
         <div>
           <label className="label">{t('email')}</label>
           <input
