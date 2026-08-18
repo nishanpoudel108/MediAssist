@@ -125,7 +125,79 @@ export default function Reports() {
       setAnalysis(null);
     }
   }
+  async function handleDeleteReport(report) {
+  if (!report?.id) return;
 
+  const confirmed = window.confirm(
+    `Are you sure you want to permanently delete "${report.title || 'this report'}"?\n\n` +
+    'The uploaded file, extracted text, and AI analysis will also be deleted.\n\n' +
+    'This action cannot be undone.',
+  );
+
+  if (!confirmed) return;
+
+  setError('');
+
+  try {
+    const { data, error: deleteError } =
+      await supabase.functions.invoke(
+        'delete-report',
+        {
+          body: {
+            report_id: report.id,
+          },
+        },
+      );
+
+    if (deleteError) {
+      throw new Error(
+        deleteError.message ||
+          'Could not delete the report.',
+      );
+    }
+
+    if (!data?.success) {
+      throw new Error(
+        data?.error ||
+          'Could not delete the report.',
+      );
+    }
+
+    // Remove from local state immediately
+    setReports((current) =>
+      current.filter(
+        (item) => item.id !== report.id,
+      ),
+    );
+
+    // If the deleted report was selected,
+    // select another report or clear the view.
+    if (selected?.id === report.id) {
+      const remainingReports = reports.filter(
+        (item) => item.id !== report.id,
+      );
+
+      if (remainingReports.length > 0) {
+        selectReport(remainingReports[0]);
+      } else {
+        setSelected(null);
+        setAnalysis(null);
+      }
+    }
+
+  } catch (err) {
+    console.error(
+      'Delete report error:',
+      err,
+    );
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Could not delete the report.',
+    );
+  }
+ }
   async function explainSelectedReport() {
     if (!selected) return;
     setError('');
@@ -216,22 +288,44 @@ export default function Reports() {
           ) : (
             <ul className="space-y-2">
               {reports.map((r) => (
-                <li key={r.id}>
-                  <button
-                    onClick={() => selectReport(r)}
-                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm ${
-                      selected?.id === r.id
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span className="font-medium">{r.title || 'Untitled'}</span>
-                    <span className="block text-xs text-slate-500">
-                      {new Date(r.created_at).toLocaleDateString()}
-                    </span>
-                  </button>
-                </li>
-              ))}
+  <li key={r.id}>
+    <div
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+        selected?.id === r.id
+          ? 'border-primary-500 bg-primary-50'
+          : 'border-slate-200 hover:bg-slate-50'
+      }`}
+    >
+      {/* Report selection */}
+      <button
+        type="button"
+        onClick={() => selectReport(r)}
+        className="flex-1 min-w-0 text-left"
+      >
+        <span className="font-medium block truncate">
+          {r.title || 'Untitled'}
+        </span>
+
+        <span className="block text-xs text-slate-500 mt-1">
+          {new Date(
+            r.created_at,
+          ).toLocaleDateString()}
+        </span>
+      </button>
+
+      {/* Delete */}
+      <button
+        type="button"
+        onClick={() => handleDeleteReport(r)}
+        title="Delete report"
+        aria-label={`Delete ${r.title || 'report'}`}
+        className="shrink-0 p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition"
+      >
+        🗑️
+      </button>
+    </div>
+  </li>
+))}
             </ul>
           )}
         </div>
