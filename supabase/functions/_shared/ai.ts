@@ -190,7 +190,7 @@ async function callGemini(messages: any[]) {
         contents: userMessages,
 
         generationConfig: {
-          temperature: 0.2,
+          // temperature: 0.2,
 
           responseMimeType: 'application/json',
 
