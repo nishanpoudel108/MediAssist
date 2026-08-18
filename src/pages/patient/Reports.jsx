@@ -17,6 +17,7 @@ export default function Reports() {
   const [error, setError] = useState('');
   const [analysis, setAnalysis] = useState(null);
 
+
   useEffect(() => {
     if (!patientId) return;
     loadReports();
@@ -125,17 +126,83 @@ export default function Reports() {
       setAnalysis(null);
     }
   }
-  async function handleDeleteReport(report) {
+//   async function handleDeleteReport(report) {
+//   if (!report?.id) return;
+
+//   const confirmed = window.confirm(
+//     `Are you sure you want to permanently delete "${report.title || 'this report'}"?\n\n` +
+//     'The uploaded file, extracted text, and AI analysis will also be deleted.\n\n' +
+//     'This action cannot be undone.',
+//   );
+
+//   if (!confirmed) return;
+
+//   setError('');
+
+//   try {
+//     const { data, error: deleteError } =
+//       await supabase.functions.invoke(
+//         'delete-report',
+//         {
+//           body: {
+//             report_id: report.id,
+//           },
+//         },
+//       );
+
+//     if (deleteError) {
+//       throw new Error(
+//         deleteError.message ||
+//           'Could not delete the report.',
+//       );
+//     }
+
+//     if (!data?.success) {
+//       throw new Error(
+//         data?.error ||
+//           'Could not delete the report.',
+//       );
+//     }
+
+//     // Remove from local state immediately
+//     setReports((current) =>
+//       current.filter(
+//         (item) => item.id !== report.id,
+//       ),
+//     );
+
+//     // If the deleted report was selected,
+//     // select another report or clear the view.
+//     if (selected?.id === report.id) {
+//       const remainingReports = reports.filter(
+//         (item) => item.id !== report.id,
+//       );
+
+//       if (remainingReports.length > 0) {
+//         selectReport(remainingReports[0]);
+//       } else {
+//         setSelected(null);
+//         setAnalysis(null);
+//       }
+//     }
+
+//   } catch (err) {
+//     console.error(
+//       'Delete report error:',
+//       err,
+//     );
+
+//     setError(
+//       err instanceof Error
+//         ? err.message
+//         : 'Could not delete the report.',
+//     );
+//   }
+//  }
+async function handleDeleteReport(report) {
   if (!report?.id) return;
 
-  const confirmed = window.confirm(
-    `Are you sure you want to permanently delete "${report.title || 'this report'}"?\n\n` +
-    'The uploaded file, extracted text, and AI analysis will also be deleted.\n\n' +
-    'This action cannot be undone.',
-  );
-
-  if (!confirmed) return;
-
+  setDeleting(true);
   setError('');
 
   try {
@@ -163,15 +230,12 @@ export default function Reports() {
       );
     }
 
-    // Remove from local state immediately
     setReports((current) =>
       current.filter(
         (item) => item.id !== report.id,
       ),
     );
 
-    // If the deleted report was selected,
-    // select another report or clear the view.
     if (selected?.id === report.id) {
       const remainingReports = reports.filter(
         (item) => item.id !== report.id,
@@ -185,19 +249,20 @@ export default function Reports() {
       }
     }
 
+    setDeleteTarget(null);
+
   } catch (err) {
-    console.error(
-      'Delete report error:',
-      err,
-    );
+    console.error('Delete report error:', err);
 
     setError(
       err instanceof Error
         ? err.message
         : 'Could not delete the report.',
     );
+  } finally {
+    setDeleting(false);
   }
- }
+}
   async function explainSelectedReport() {
     if (!selected) return;
     setError('');
@@ -316,13 +381,85 @@ export default function Reports() {
       {/* Delete */}
       <button
         type="button"
-        onClick={() => handleDeleteReport(r)}
+        onClick={() => setDeleteTarget(r)}
+        // onClick={() => handleDeleteReport(r)}
         title="Delete report"
         aria-label={`Delete ${r.title || 'report'}`}
         className="shrink-0 p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition"
       >
         🗑️
       </button>
+      {deleteTarget && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+    onMouseDown={(e) => {
+      if (e.target === e.currentTarget && !deleting) {
+        setDeleteTarget(null);
+      }
+    }}
+  >
+    <div
+      className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-report-title"
+    >
+      {/* Warning icon */}
+      <div className="flex justify-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 text-xl">
+          ⚠️
+        </div>
+      </div>
+
+      {/* Title */}
+      <h2
+        id="delete-report-title"
+        className="mt-4 text-center text-xl font-semibold text-slate-800"
+      >
+        Delete report?
+      </h2>
+
+      {/* Message */}
+      <p className="mt-2 text-center text-sm text-slate-500">
+        Are you sure you want to permanently delete this
+        report?
+      </p>
+
+      {/* Report name */}
+      <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3">
+        <p className="truncate text-sm font-medium text-slate-700">
+          {deleteTarget.title || 'Untitled report'}
+        </p>
+      </div>
+
+      <p className="mt-3 text-center text-xs text-slate-500">
+        The uploaded file, extracted text, and AI analysis
+        will also be deleted. This action cannot be undone.
+      </p>
+
+      {/* Actions */}
+      <div className="mt-6 flex gap-3">
+        <button
+          type="button"
+          disabled={deleting}
+          onClick={() => setDeleteTarget(null)}
+          className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          disabled={deleting}
+          onClick={() => handleDeleteReport(deleteTarget)}
+          className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {deleting ? 'Deleting...' : 'Delete report'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   </li>
 ))}
